@@ -145,3 +145,102 @@ class CustomerUserTests(TestCase):
 
         user.refresh_from_db()
         self.assertTrue(user.human_escalation_required)
+
+    def test_admin_list_users_pagination(self):
+        # Create 5 users
+        # Users Meta ordering is -created_at, so users created later appear first
+        u1 = CustomerUser.objects.create(email="user1@example.com", name="User One")
+        u2 = CustomerUser.objects.create(email="user2@example.com", name="User Two")
+        u3 = CustomerUser.objects.create(email="user3@example.com", name="User Three")
+
+        # Get first page with size 2
+        response = self.client.get("/api/v1/admin/users/", {"page_size": 2})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data["data"]), 2)
+        
+        # Checking that ordering is descending by created_at
+        self.assertEqual(response.data["data"][0]["email"], "user3@example.com")
+        self.assertEqual(response.data["data"][1]["email"], "user2@example.com")
+        
+        self.assertIn("meta", response.data)
+        self.assertIsNotNone(response.data["meta"]["next"])
+        self.assertIsNone(response.data["meta"]["previous"])
+        
+        # Get second page using the next cursor
+        next_url = response.data["meta"]["next"]
+        # Extract query parameters or query the full url (APIClient handles full URLs pointing to testserver)
+        response_page2 = self.client.get(next_url)
+        self.assertEqual(response_page2.status_code, 200)
+        self.assertEqual(len(response_page2.data["data"]), 1)
+        self.assertEqual(response_page2.data["data"][0]["email"], "user1@example.com")
+        self.assertIsNone(response_page2.data["meta"]["next"])
+        self.assertIsNotNone(response_page2.data["meta"]["previous"])
+
+    def test_admin_list_users_search(self):
+        CustomerUser.objects.create(email="alice@example.com", name="Alice Smith")
+        CustomerUser.objects.create(email="bob@example.com", name="Bob Jones")
+        CustomerUser.objects.create(email="charlie@example.com", name="Charlie Brown")
+
+        # Search for 'alice' by name
+        res = self.client.get("/api/v1/admin/users/", {"search": "alice"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.data["data"]), 1)
+        self.assertEqual(res.data["data"][0]["name"], "Alice Smith")
+
+        # Search for 'brown' by name (case-insensitive)
+        res = self.client.get("/api/v1/admin/users/", {"search": "BROWN"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.data["data"]), 1)
+        self.assertEqual(res.data["data"][0]["name"], "Charlie Brown")
+
+        # Search for 'bob' by email
+        res = self.client.get("/api/v1/admin/users/", {"search": "bob@example.com"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.data["data"]), 1)
+        self.assertEqual(res.data["data"][0]["email"], "bob@example.com")
+
+        # Search using single 'search' query param
+        res = self.client.get("/api/v1/admin/users/", {"search": "jones"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.data["data"]), 1)
+        self.assertEqual(res.data["data"][0]["name"], "Bob Jones")
+
+        # Search term with no match
+        res = self.client.get("/api/v1/admin/users/", {"search": "xyz"})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(len(res.data["data"]), 0)
+
+    def test_admin_list_users_latest_chat_ordering(self):
+        # Create three users
+        u1 = CustomerUser.objects.create(email="user1@example.com", name="User One")
+        u2 = CustomerUser.objects.create(email="user2@example.com", name="User Two")
+        u3 = CustomerUser.objects.create(email="user3@example.com", name="User Three")
+
+        # Initially, with no chat sessions, they should be sorted by created_at descending: u3, u2, u1.
+        res = self.client.get("/api/v1/admin/users/")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["data"][0]["email"], "user3@example.com")
+        self.assertEqual(res.data["data"][1]["email"], "user2@example.com")
+        self.assertEqual(res.data["data"][2]["email"], "user1@example.com")
+
+        # Now, create a chat session for u2 (user2@example.com)
+        ChatSession.objects.create(user=u2)
+        
+        # Call user list, u2 should be first!
+        res = self.client.get("/api/v1/admin/users/")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["data"][0]["email"], "user2@example.com")
+        self.assertEqual(res.data["data"][1]["email"], "user3@example.com")
+        self.assertEqual(res.data["data"][2]["email"], "user1@example.com")
+
+        # Now create a chat session for u1 (user1@example.com)
+        ChatSession.objects.create(user=u1)
+        
+        # Now u1 should be first! u2 second, u3 third.
+        res = self.client.get("/api/v1/admin/users/")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data["data"][0]["email"], "user1@example.com")
+        self.assertEqual(res.data["data"][1]["email"], "user2@example.com")
+        self.assertEqual(res.data["data"][2]["email"], "user3@example.com")
+
+
