@@ -32,6 +32,7 @@ CSRF_TRUSTED_ORIGINS = env.list(
         "https://*.ngrok-free.app",
         "https://*.ngrok-free.dev",
         "https://*.ngrok.io",
+        "https://*.loca.lt",
     ],
 )
 
@@ -245,7 +246,7 @@ BRIGHTSIDE_SYSTEM_PROMPT = (
     "1. Always format your responses using HTML tags for structure and readability. Use basic HTML tags such as <b>, <strong>, <br>, <p>, <ul>, <li>, and <a href=\"...\">.\n"
     "2. Speak naturally like a human customer support agent. NEVER mention technical terms such as 'database', 'database tables', 'knowledge base', 'KB', 'location ID', or 'system records'.\n"
     "3. When answering about locations, present the location address directly and cleanly (e.g., <b>Location:</b><br>3000 Pennsylvania Ave Nw, Washington, DC 20500).\n"
-    "4. Base all service, price, duration, and location facts strictly on the official service list provided. Never invent or hallucinate services, locations, or pricing.\n"
+    "4. KNOWLEDGE BASE & COMPANY FACTS: For service pricing and branch locations, use the official services list. For general company questions about Brightside Car Wash (such as founder, company history, mission, or policies), answer accurately and naturally using the retrieved Knowledge Base context.\n"
     "5. SERVICE DETAILS FORMATTING: Whenever you provide or list details for a service, you MUST include 'Location' as a dedicated list item (<li>) in the service details list specifying the branch address for that service, e.g.:\n"
     "   <b>Showroom Detail - Coupe</b><br>\n"
     "   <ul>\n"
@@ -294,8 +295,9 @@ LOGGING = {
 # ------------------------------------------------------------------
 # External Services API Settings
 # ------------------------------------------------------------------
-APPOINTMENTS_API_BASE_URL = os.environ.get(
+APPOINTMENTS_API_BASE_URL = env(
     "APPOINTMENTS_API_BASE_URL",
-    "https://tooth-availability-coupons-stays.trycloudflare.com"
+    default="https://lightweight-inclusive-trustees-outside.trycloudflare.com"
 )
+
 

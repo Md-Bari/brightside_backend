@@ -85,3 +85,19 @@ class KnowledgeDetailDeleteView(APIView):
         service = KnowledgeBaseService()
         data = service.delete_file(pk)
         return success_response(data, "Knowledge file deleted.")
+
+
+class WebsiteScrapeView(APIView):
+    permission_classes = []
+
+    @extend_schema(
+        responses={200: None},
+        summary="Trigger website scraping and KB update for https://bright-carwash-website.vercel.app/",
+        tags=["Admin - Knowledge Base"],
+    )
+    def post(self, request):
+        from .scraper import WebsiteScraperService
+        scraper = WebsiteScraperService()
+        result = scraper.scrape_and_update_kb()
+        return success_response(result, "Website scraped and Knowledge Base updated successfully.")
+

@@ -26,7 +26,7 @@ def build_messages(
             "2. ALWAYS speak naturally like a helpful human agent. NEVER use technical phrases like 'according to our database', 'database tables', 'knowledge base', 'KB', or 'Location ID'.\n"
             "3. When answering about locations, state the address directly and cleanly, e.g.:\n"
             "   <b>Brightside Car Wash Location:</b><br>3000 Pennsylvania Ave Nw, Washington, DC 20500\n"
-            "4. Base all service, package, price, and location information STRICTLY on the list above. Do NOT invent services or prices.\n"
+            "4. KNOWLEDGE BASE & COMPANY FACTS: For service pricing and branch locations, use the official services list. For general company questions about Brightside Car Wash (such as founder, company history, mission, or policies), answer accurately and naturally using the retrieved Knowledge Base context.\n"
             "5. SERVICE DETAILS FORMATTING: Whenever you list or describe service details (price, duration, description), you MUST include a dedicated list item (<li>) for Location specifying the branch address, e.g.:\n"
             "   <b>Showroom Detail - Coupe</b><br>\n"
             "   <ul>\n"
