@@ -3,7 +3,10 @@ Django settings for Brightside AI Chatbot Backend.
 """
 from datetime import timedelta
 from pathlib import Path
+import os
+import sys
 
+# pyrefly: ignore [missing-import]
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -61,6 +64,7 @@ LOCAL_APPS = [
     "apps.knowledgebase",
     "apps.adminpanel",
     "apps.campaigns",
+    "apps.services",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -113,6 +117,8 @@ DATABASES = {
     }
 }
 
+
+
 # ------------------------------------------------------------------
 # Password validation
 # ------------------------------------------------------------------
@@ -150,9 +156,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Django REST Framework
 # ------------------------------------------------------------------
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    ),
+    "DEFAULT_AUTHENTICATION_CLASSES": (),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.AllowAny",
     ),
@@ -176,7 +180,19 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
-    "SWAGGER_UI_SETTINGS": {"persistAuthorization": True},
+    "SWAGGER_UI_SETTINGS": {
+        "persistAuthorization": True,
+        "tagsSorter": "alpha",
+    },
+    "TAGS": [
+        {"name": "Admin - 1. Users"},
+        {"name": "Admin - 2. Sessions"},
+        {"name": "Admin - 3. Chats"},
+        {"name": "Admin - Campaigns"},
+        {"name": "Admin - Knowledge Base"},
+        {"name": "Public - Chat"},
+        {"name": "Public - Sessions"},
+    ],
 }
 
 # ------------------------------------------------------------------
@@ -193,12 +209,21 @@ SIMPLE_JWT = {
 # ------------------------------------------------------------------
 # CORS
 # ------------------------------------------------------------------
-CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=["http://localhost:3000"])
+from corsheaders.defaults import default_headers
+
 CORS_ALLOW_ALL_ORIGINS = env.bool("CORS_ALLOW_ALL_ORIGINS", default=True)
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "ngrok-skip-browser-warning",
+    "authorization",
+]
+
 
 # ------------------------------------------------------------------
 # Brightside / AI configuration
 # ------------------------------------------------------------------
+LLM_PROVIDER = env("LLM_PROVIDER", default="openai")  # "openai" | "groq"
+OPENAI_MODEL = env("OPENAI_MODEL", default="gpt-4o-mini")
 GROQ_API_KEY = env("GROQ_API_KEY", default="")
 GROQ_MODEL = env("GROQ_MODEL", default="llama-3.3-70b-versatile")
 
@@ -214,17 +239,29 @@ KB_CHUNK_OVERLAP = env.int("KB_CHUNK_OVERLAP", default=100)
 KB_TOP_K = env.int("KB_TOP_K", default=4)
 
 BRIGHTSIDE_SYSTEM_PROMPT = (
-    "You are Brightside Assistant, the official AI support agent for "
-    "Brightside Car Wash. Answer customer questions clearly, warmly and "
-    "concisely. When knowledge base context is provided, ground your "
-    "answer strictly in that context and do not invent Brightside-specific "
-    "facts (pricing, locations, packages, hours) that are not present in "
-    "the context. If you cannot answer the user's question, if you are unable to help "
-    "or feel stuck, or if the user asks for a human, you MUST trigger human escalation. "
-    "To trigger human escalation, you MUST include the exact text '[HUMAN_ESCALATION]' in your reply "
-    "and state that our staff will communicate with them very soon. For example: "
-    "'[HUMAN_ESCALATION] I am unable to assist with this query. Our staff will communicate with you very soon.'"
+    "You are Brightside Assistant, the friendly, helpful human support agent for "
+    "Brightside Car Wash. Answer customer questions warmly, clearly, and concisely.\n\n"
+    "STRICT FORMATTING & CONVERSATIONAL RULES:\n"
+    "1. Always format your responses using HTML tags for structure and readability. Use basic HTML tags such as <b>, <strong>, <br>, <p>, <ul>, <li>, and <a href=\"...\">.\n"
+    "2. Speak naturally like a human customer support agent. NEVER mention technical terms such as 'database', 'database tables', 'knowledge base', 'KB', 'location ID', or 'system records'.\n"
+    "3. When answering about locations, present the location address directly and cleanly (e.g., <b>Location:</b><br>3000 Pennsylvania Ave Nw, Washington, DC 20500).\n"
+    "4. Base all service, price, duration, and location facts strictly on the official service list provided. Never invent or hallucinate services, locations, or pricing.\n"
+    "5. SERVICE DETAILS FORMATTING: Whenever you provide or list details for a service, you MUST include 'Location' as a dedicated list item (<li>) in the service details list specifying the branch address for that service, e.g.:\n"
+    "   <b>Showroom Detail - Coupe</b><br>\n"
+    "   <ul>\n"
+    "     <li><b>Price:</b> $100.00</li>\n"
+    "     <li><b>Duration:</b> 240 mins</li>\n"
+    "     <li><b>Location:</b> 3000 Pennsylvania Ave Nw, Washington, DC 20500</li>\n"
+    "     <li><b>Description:</b> Deep interior cleaning, vacuuming, and wax buffing.</li>\n"
+    "   </ul>\n"
+    "6. If a customer asks about a service or location that is not offered, politely inform them in a natural human way that we do not offer it, and share our available services.\n"
+    "7. When a customer wants to book a slot, schedule an appointment, or reserve a service, ALWAYS provide the official booking link with a warm message:\n"
+    "   <b>Book your slot online:</b> <a href=\"https://bright-carwash-website.vercel.app/services\" target=\"_blank\">https://bright-carwash-website.vercel.app/services</a>\n"
+    "8. OUT-OF-DOMAIN QUESTIONS: If a customer asks a question that is out of domain or unrelated to Brightside Car Wash (such as recipes, history, general science, sports, weather, coding, etc.), DO NOT answer the out-of-domain question. Politely state using HTML tags that you are unable to answer that question, but welcome them to ask any question about Brightside Car Wash services, locations, or booking a slot.\n"
+    "9. If you cannot help or the user asks for a human, trigger human escalation by including '[HUMAN_ESCALATION]' in your reply and letting them know our staff will communicate with them very soon."
 )
+
+BOOKING_URL = "https://bright-carwash-website.vercel.app/services"
 
 # ------------------------------------------------------------------
 # Logging
@@ -253,3 +290,12 @@ LOGGING = {
         "brightside": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
     },
 }
+
+# ------------------------------------------------------------------
+# External Services API Settings
+# ------------------------------------------------------------------
+APPOINTMENTS_API_BASE_URL = os.environ.get(
+    "APPOINTMENTS_API_BASE_URL",
+    "https://tooth-availability-coupons-stays.trycloudflare.com"
+)
+

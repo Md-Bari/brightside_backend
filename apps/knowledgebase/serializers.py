@@ -10,10 +10,10 @@ class KnowledgeFileUploadSerializer(serializers.ModelSerializer):
         extra_kwargs = {"title": {"required": False}}
 
     def validate_file(self, value):
-        allowed_ext = (".pdf", ".docx", ".txt")
+        allowed_ext = (".pdf", ".docx", ".txt", ".csv", ".xlsx", ".xls")
         if not value.name.lower().endswith(allowed_ext):
             raise serializers.ValidationError(
-                "Unsupported file type. Allowed: PDF, DOCX, TXT."
+                "Unsupported file type. Allowed: PDF, DOCX, TXT, CSV, EXCEL (XLSX, XLS)."
             )
         return value
 
@@ -40,8 +40,5 @@ class KnowledgeFileSerializer(serializers.ModelSerializer):
         ]
 
 
-class KnowledgeFileDetailSerializer(KnowledgeFileSerializer):
-    chunks = KnowledgeChunkSerializer(many=True, read_only=True)
+KnowledgeFileDetailSerializer = KnowledgeFileSerializer
 
-    class Meta(KnowledgeFileSerializer.Meta):
-        fields = KnowledgeFileSerializer.Meta.fields + ["chunks"]

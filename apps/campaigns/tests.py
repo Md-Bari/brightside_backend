@@ -21,14 +21,45 @@ class CampaignsTests(TestCase):
             is_active=False,
         )
 
-    def test_public_campaigns_list(self):
-        # Anyone can list active campaigns
-        response = self.client.get("/api/v1/campaigns/")
-        self.assertEqual(response.status_code, 200)
-        data = response.data["data"]
-        # Should only return active campaigns
-        self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]["title"], "Summer Shine Splash")
+    def test_campaign_scheduling_bounds(self):
+        from django.utils import timezone
+        from datetime import timedelta
+
+        now = timezone.now()
+
+        # 1. Future campaign (start_date in future) - should be inactive
+        future_campaign = Campaign.objects.create(
+            title="Future Campaign",
+            description="Starts tomorrow",
+            is_active=True,
+            start_date=now + timedelta(days=1),
+        )
+
+        # 2. Expired campaign (end_date in past) - should be inactive
+        expired_campaign = Campaign.objects.create(
+            title="Past Campaign",
+            description="Ended yesterday",
+            is_active=True,
+            end_date=now - timedelta(days=1),
+        )
+
+        # 3. Scheduled active campaign (start_date in past, end_date in future) - should be active
+        scheduled_active = Campaign.objects.create(
+            title="Scheduled Active",
+            description="Active now",
+            is_active=True,
+            start_date=now - timedelta(days=1),
+            end_date=now + timedelta(days=1),
+        )
+
+        # Get active campaigns list
+        active_list = Campaign.objects.active()
+
+        self.assertIn(self.active_campaign, active_list)
+        self.assertNotIn(self.inactive_campaign, active_list)
+        self.assertNotIn(future_campaign, active_list)
+        self.assertNotIn(expired_campaign, active_list)
+        self.assertIn(scheduled_active, active_list)
 
     def test_session_creation_returns_campaigns(self):
         # Creating a session should return active campaigns

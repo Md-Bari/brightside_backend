@@ -19,17 +19,32 @@ class SessionAPITests(TestCase):
         uuid.UUID(str(data["session_id"]))
         uuid.UUID(str(data["user_id"]))
 
-    def test_end_session(self):
+    def test_auto_end_session_after_inactivity(self):
+        from django.utils import timezone
+        from datetime import timedelta
+        from apps.sessions.models import ChatSession
+
         create_resp = self.client.post(
             "/api/v1/sessions/", {"email": "customer2@brightside.com"}, format="json"
         )
         session_id = create_resp.data["data"]["session_id"]
 
-        end_resp = self.client.post(
-            "/api/v1/sessions/end/", {"session_id": session_id}, format="json"
+        # Simulate 11 minutes of inactivity by manually backdating updated_at
+        past_time = timezone.now() - timedelta(minutes=11)
+        ChatSession.objects.filter(session_id=session_id).update(updated_at=past_time)
+
+        # Attempting to load/chat in the session should fail with 410
+        response = self.client.post(
+            "/api/v1/chat/message/",
+            {"session_id": session_id, "message": "hello"},
+            format="json",
         )
-        self.assertEqual(end_resp.status_code, 200)
-        self.assertEqual(end_resp.data["data"]["status"], "ENDED")
+        self.assertEqual(response.status_code, 410)
+
+        # Verify status in database is ENDED
+        session = ChatSession.objects.get(session_id=session_id)
+        self.assertEqual(session.status, ChatSession.Status.ENDED)
+        self.assertIsNotNone(session.ended_at)
 
     def test_admin_sessions_do_not_require_authentication(self):
         create_resp = self.client.post(

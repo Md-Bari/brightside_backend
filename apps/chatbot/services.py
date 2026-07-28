@@ -9,6 +9,7 @@ import logging
 
 from apps.common.exceptions import ServiceError
 from apps.knowledgebase.services import KnowledgeBaseService
+from apps.services.repositories import ServiceRepository
 from apps.sessions.services import SessionService
 from prompts.builder import build_messages
 from utils.llm.groq_client import generate_chat_completion, GroqClientError
@@ -24,10 +25,12 @@ class ChatService:
         session_service: SessionService | None = None,
         kb_service: KnowledgeBaseService | None = None,
         classifier: QuestionClassifierService | None = None,
+        service_repo: ServiceRepository | None = None,
     ):
         self.session_service = session_service or SessionService()
         self.kb_service = kb_service or KnowledgeBaseService()
         self.classifier = classifier or QuestionClassifierService()
+        self.service_repo = service_repo or ServiceRepository()
 
     def handle_message(self, session_id, message: str) -> dict:
         session = self.session_service.get_active_session(session_id)
@@ -42,13 +45,20 @@ class ChatService:
         question_type = self.classifier.classify(message)
         logger.info("Session %s classified as %s", session_id, question_type)
 
-        # 4. Retrieve KB context if DOMAIN
+        # 4. Retrieve KB context & Services DB context if DOMAIN
         kb_chunks = []
+        services_context = None
         if question_type == QuestionClassifierService.DOMAIN:
             kb_chunks = self.kb_service.retrieve_relevant_chunks(message)
+            services_context = self.service_repo.get_formatted_context()
 
-        # 5. Build prompt (system + history + kb context + question)
-        llm_messages = build_messages(history=history, question=message, kb_chunks=kb_chunks)
+        # 5. Build prompt (system + history + services context + kb context + question)
+        llm_messages = build_messages(
+            history=history,
+            question=message,
+            kb_chunks=kb_chunks,
+            services_context=services_context
+        )
 
         # 6. Call Groq
         try:

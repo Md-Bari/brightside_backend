@@ -1,4 +1,6 @@
+# pyrefly: ignore [missing-import]
 from drf_spectacular.utils import extend_schema
+# pyrefly: ignore [missing-import]
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.common.response import success_response

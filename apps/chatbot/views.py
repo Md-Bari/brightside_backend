@@ -1,6 +1,7 @@
 """
 Public chat endpoint. Protected by UUID session validation (not JWT).
 """
+# pyrefly: ignore [missing-import]
 from drf_spectacular.utils import extend_schema
 from rest_framework.views import APIView
 
@@ -17,7 +18,7 @@ class ChatMessageView(APIView):
         request=ChatMessageRequestSerializer,
         responses={200: ChatMessageResponseSerializer},
         summary="Send a chat message within an active session",
-        tags=["Public - Chat"],
+        tags=["Public - 2. Chat"],
     )
     def post(self, request):
         serializer = ChatMessageRequestSerializer(data=request.data)

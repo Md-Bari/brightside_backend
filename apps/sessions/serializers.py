@@ -21,22 +21,11 @@ class SessionSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
     def get_campaigns(self, obj):
-        active_campaigns = Campaign.objects.filter(is_active=True)
+        active_campaigns = Campaign.objects.active()
         return CampaignSerializer(active_campaigns, many=True, context=self.context).data
 
 
-class EndSessionRequestSerializer(serializers.Serializer):
-    session_id = serializers.UUIDField()
 
-
-class EndSessionResponseSerializer(serializers.ModelSerializer):
-    user_id = serializers.UUIDField(read_only=True)
-    email = serializers.EmailField(source="user.email", read_only=True)
-
-    class Meta:
-        model = ChatSession
-        fields = ["session_id", "user_id", "email", "status", "ended_at"]
-        read_only_fields = fields
 
 
 class AdminSessionListSerializer(serializers.ModelSerializer):

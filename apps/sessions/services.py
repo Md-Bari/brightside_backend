@@ -25,7 +25,7 @@ class SessionService:
         session = self.repository.create(user=user)
 
         # Get active campaigns
-        active_campaigns = Campaign.objects.filter(is_active=True)
+        active_campaigns = Campaign.objects.active()
         campaigns_data = CampaignSerializer(active_campaigns, many=True).data
 
         # Build welcome message with campaign info
@@ -34,24 +34,27 @@ class SessionService:
             f"How can I help you today?"
         )
 
-        # Store welcome message and campaigns info in JSONB messages
+        # Store welcome message in JSONB messages
         messages = list(session.messages or [])
         messages.append({"role": "assistant", "content": greeting})
-        if campaigns_data:
-            messages.append({
-                "role": "system",
-                "content": "Active campaigns information",
-                "campaigns": campaigns_data
-            })
         session = self.repository.save_messages(session, messages)
 
         logger.info("Created session %s for %s", session.session_id, user.email)
+        return session
+
+    def check_inactivity_and_end(self, session: ChatSession) -> ChatSession:
+        from django.utils import timezone
+        from datetime import timedelta
+        if session.status == ChatSession.Status.ACTIVE:
+            if timezone.now() - session.updated_at > timedelta(minutes=10):
+                session = self.repository.end_session(session)
         return session
 
     def get_active_session(self, session_id) -> ChatSession:
         session = self.repository.get_by_session_id(session_id)
         if not session:
             raise NotFoundServiceError("Session not found.")
+        session = self.check_inactivity_and_end(session)
         if session.status == ChatSession.Status.ENDED:
             raise ServiceError("This session has already ended.", status_code=410)
         return session
@@ -60,18 +63,13 @@ class SessionService:
         session = self.repository.get_by_session_id(session_id)
         if not session:
             raise NotFoundServiceError("Session not found.")
+        session = self.check_inactivity_and_end(session)
         return session
 
     def append_message(self, session: ChatSession, role: str, content: str) -> ChatSession:
         messages = list(session.messages or [])
         messages.append({"role": role, "content": content})
         return self.repository.save_messages(session, messages)
-
-    def end_session(self, session_id) -> ChatSession:
-        session = self.get_session(session_id)
-        if session.status == ChatSession.Status.ENDED:
-            return session
-        return self.repository.end_session(session)
 
     # --- Admin operations ---
     def list_all_sessions(self):

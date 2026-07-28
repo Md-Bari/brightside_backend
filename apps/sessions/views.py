@@ -3,6 +3,7 @@ Session endpoints.
 Public: create session, end session (UUID-based, no JWT).
 Admin: list/detail/delete sessions (JWT protected).
 """
+# pyrefly: ignore [missing-import]
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -14,8 +15,6 @@ from apps.common.response import success_response
 from .serializers import (
     CreateSessionRequestSerializer,
     SessionSerializer,
-    EndSessionRequestSerializer,
-    EndSessionResponseSerializer,
     AdminSessionListSerializer,
     AdminSessionDetailSerializer,
 )
@@ -42,25 +41,6 @@ class CreateSessionView(APIView):
         )
         data = SessionSerializer(session, context={"request": request}).data
         return success_response(data, "Session created successfully.", status.HTTP_201_CREATED)
-
-
-class EndSessionView(APIView):
-    permission_classes = []
-
-    @extend_schema(
-        request=EndSessionRequestSerializer,
-        responses={200: EndSessionResponseSerializer},
-        summary="End an active chat session",
-        tags=["Public - Sessions"],
-    )
-    def post(self, request):
-        serializer = EndSessionRequestSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        service = SessionService()
-        session = service.end_session(serializer.validated_data["session_id"])
-        data = EndSessionResponseSerializer(session).data
-        return success_response(data, "Session ended successfully.")
 
 
 class AdminSessionDetailView(APIView):

@@ -4,6 +4,7 @@ Views contain no business logic; they delegate to KnowledgeBaseService.
 """
 import logging
 
+# pyrefly: ignore [missing-import]
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -30,7 +31,7 @@ class KnowledgeUploadView(APIView):
     @extend_schema(
         request=KnowledgeFileUploadSerializer,
         responses={201: KnowledgeFileSerializer},
-        summary="Upload a knowledge base document (PDF/DOCX/TXT)",
+        summary="Upload a knowledge base document (PDF/DOCX/TXT/CSV/EXCEL)",
         tags=["Admin - Knowledge Base"],
     )
     def post(self, request):
@@ -65,14 +66,14 @@ class KnowledgeDetailDeleteView(APIView):
     permission_classes = []
 
     @extend_schema(
-        responses={200: KnowledgeFileDetailSerializer},
-        summary="Retrieve a single knowledge base file with its chunks",
+        responses={200: KnowledgeFileSerializer},
+        summary="Retrieve a single knowledge base file",
         tags=["Admin - Knowledge Base"],
     )
     def get(self, request, pk):
         service = KnowledgeBaseService()
         file = service.get_file(pk)
-        data = KnowledgeFileDetailSerializer(file, context={"request": request}).data
+        data = KnowledgeFileSerializer(file, context={"request": request}).data
         return success_response(data, "Knowledge file retrieved.")
 
     @extend_schema(

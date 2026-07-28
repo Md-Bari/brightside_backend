@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+# pyrefly: ignore [missing-import]
 from drf_spectacular.utils import extend_schema
 from rest_framework.views import APIView
 
