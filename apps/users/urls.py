@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import AdminUserListView, AdminUserSessionsListView
+from .views import AdminUserListView, AdminUserSessionsListView, AdminUserResolveEscalationView
 
 urlpatterns = [
     path("", AdminUserListView.as_view(), name="admin-user-list"),
@@ -9,4 +9,10 @@ urlpatterns = [
         AdminUserSessionsListView.as_view(),
         name="admin-user-sessions",
     ),
+    path(
+        "<uuid:user_id>/resolve/",
+        AdminUserResolveEscalationView.as_view(),
+        name="admin-user-resolve-escalation",
+    ),
 ]
+

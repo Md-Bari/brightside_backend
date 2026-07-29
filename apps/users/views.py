@@ -85,9 +85,6 @@ class AdminUserSessionsListView(APIView):
     )
     def get(self, request, user_id):
         user = get_object_or_404(CustomerUser, user_id=user_id)
-        if user.human_escalation_required:
-            user.human_escalation_required = False
-            user.save(update_fields=["human_escalation_required", "updated_at"])
         sessions = ChatSession.objects.filter(user=user)
         data = {
             "user_id": str(user.user_id),
@@ -96,3 +93,21 @@ class AdminUserSessionsListView(APIView):
             "sessions": AdminSessionListSerializer(sessions, many=True).data,
         }
         return success_response(data, f"Sessions for user {user.email} retrieved.")
+
+
+class AdminUserResolveEscalationView(APIView):
+    permission_classes = []
+
+    @extend_schema(
+        responses={200: CustomerUserSerializer},
+        summary="[Admin] Resolve human escalation for a specific user",
+        tags=["Admin - 1. Users"],
+    )
+    def post(self, request, user_id):
+        user = get_object_or_404(CustomerUser, user_id=user_id)
+        if user.human_escalation_required:
+            user.human_escalation_required = False
+            user.save(update_fields=["human_escalation_required", "updated_at"])
+        serializer = CustomerUserSerializer(user)
+        return success_response(serializer.data, "Human escalation resolved successfully.")
+

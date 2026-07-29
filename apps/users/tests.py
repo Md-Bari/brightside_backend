@@ -117,8 +117,19 @@ class CustomerUserTests(TestCase):
         user.refresh_from_db()
         self.assertTrue(user.human_escalation_required)
 
+        # Getting sessions should NOT reset the flag anymore
         view_resp = self.client.get(f"/api/v1/admin/users/{user.user_id}/sessions/")
         self.assertEqual(view_resp.status_code, 200)
+
+        user.refresh_from_db()
+        self.assertTrue(user.human_escalation_required)
+
+        # POST to the resolve endpoint should reset the flag
+        resolve_resp = self.client.post(f"/api/v1/admin/users/{user.user_id}/resolve/")
+        self.assertEqual(resolve_resp.status_code, 200)
+        self.assertTrue(resolve_resp.data["success"])
+        self.assertEqual(resolve_resp.data["message"], "Human escalation resolved successfully.")
+        self.assertEqual(resolve_resp.data["data"]["human_escalation_required"], False)
 
         user.refresh_from_db()
         self.assertFalse(user.human_escalation_required)
