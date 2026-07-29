@@ -10,6 +10,9 @@ from drf_spectacular.views import (
 
 from django.views.generic import RedirectView
 
+from django.views.static import serve
+from django.urls import re_path
+
 urlpatterns = [
     path("", RedirectView.as_view(url="api/docs/", permanent=False)),
     path("admin/", admin.site.urls),
@@ -30,5 +33,8 @@ urlpatterns = [
     path("api/v1/admin/users/", include("apps.users.urls")),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve media files directly from Django (since Nginx is removed)
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+]
+
