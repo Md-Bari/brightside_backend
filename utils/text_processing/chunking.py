@@ -13,10 +13,11 @@ def chunk_text(text: str, chunk_size: int = 800, overlap: int = 100) -> list[str
     while start < length:
         end = min(start + chunk_size, length)
         if end < length:
-            boundary = text.rfind("\n", start, end)
-            if boundary == -1 or boundary <= start:
-                boundary = text.rfind(". ", start, end)
-            if boundary != -1 and boundary > start:
+            search_start = max(start, end - 200)
+            boundary = text.rfind("\n", search_start, end)
+            if boundary == -1 or boundary <= search_start:
+                boundary = text.rfind(". ", search_start, end)
+            if boundary != -1 and boundary > search_start:
                 end = boundary + 1
 
         chunk = text[start:end].strip()

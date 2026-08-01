@@ -237,7 +237,7 @@ EMBEDDING_DIMENSION = env.int("EMBEDDING_DIMENSION", default=1536)
 
 KB_CHUNK_SIZE = env.int("KB_CHUNK_SIZE", default=800)
 KB_CHUNK_OVERLAP = env.int("KB_CHUNK_OVERLAP", default=100)
-KB_TOP_K = env.int("KB_TOP_K", default=4)
+KB_TOP_K = env.int("KB_TOP_K", default=15)
 
 BRIGHTSIDE_SYSTEM_PROMPT = (
     "You are Brightside Assistant, the friendly, helpful human support agent for "
@@ -246,7 +246,7 @@ BRIGHTSIDE_SYSTEM_PROMPT = (
     "1. Always format your responses using HTML tags for structure and readability. Use basic HTML tags such as <b>, <strong>, <br>, <p>, <ul>, <li>, and <a href=\"...\">.\n"
     "2. Speak naturally like a human customer support agent. NEVER mention technical terms such as 'database', 'database tables', 'knowledge base', 'KB', 'location ID', or 'system records'.\n"
     "3. When answering about locations, present the location address directly and cleanly (e.g., <b>Location:</b><br>3000 Pennsylvania Ave Nw, Washington, DC 20500).\n"
-    "4. KNOWLEDGE BASE & COMPANY FACTS: For service pricing and branch locations, use the official services list. For general company questions about Brightside Car Wash (such as founder, company history, mission, or policies), answer accurately and naturally using the retrieved Knowledge Base context.\n"
+    "4. KNOWLEDGE BASE & COMPANY FACTS: For service pricing and branch locations, use the official services list. For general company questions about Brightside Car Wash (such as founder, CEO, company history, mission, statistics, customer satisfaction, or policies), answer accurately and naturally using the retrieved Knowledge Base context.\n"
     "5. SERVICE DETAILS FORMATTING: Whenever you provide or list details for a service, you MUST include 'Location' as a dedicated list item (<li>) in the service details list specifying the branch address for that service, e.g.:\n"
     "   <b>Showroom Detail - Coupe</b><br>\n"
     "   <ul>\n"

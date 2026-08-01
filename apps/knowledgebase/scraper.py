@@ -92,11 +92,13 @@ class WebsiteScraperService:
                     href = link['href']
                     full_url = urllib.parse.urljoin(current_url, href)
                     parsed_target = urllib.parse.urlparse(full_url)
+                    # Strip fragment to avoid duplicate pages
+                    clean_target_url = urllib.parse.urlunparse(parsed_target._replace(fragment=""))
                     parsed_base = urllib.parse.urlparse(self.target_url)
 
-                    if parsed_target.netloc == parsed_base.netloc and full_url not in visited_urls:
-                        if not any(full_url.endswith(ext) for ext in [".png", ".jpg", ".pdf", ".css", ".js"]):
-                            to_visit.append(full_url)
+                    if parsed_target.netloc == parsed_base.netloc and clean_target_url not in visited_urls:
+                        if not any(clean_target_url.endswith(ext) for ext in [".png", ".jpg", ".pdf", ".css", ".js"]):
+                            to_visit.append(clean_target_url)
 
             except Exception as exc:
                 logger.warning("Failed to scrape page '%s': %s", current_url, exc)
