@@ -22,7 +22,7 @@ def build_messages(
             f"{services_context}\n"
             "=================================================================\n\n"
             "MANDATORY RESPONSE FORMATTING & HUMAN TONE RULES:\n"
-            "1. ALWAYS format your entire response using HTML tags for visual structure (e.g. <b>, <strong>, <br>, <p>, <ul>, <li>).\n"
+            "1. ALWAYS format your entire response using HTML tags for visual structure (e.g. <b>, <strong>, <br>, <p>, <ul>, <li>). NEVER use markdown formatting symbols (such as asterisks ** or *). For bold/emphasis, always use HTML tags like <b> or <strong>.\n"
             "2. ALWAYS speak naturally like a helpful human agent. NEVER use technical phrases like 'according to our database', 'database tables', 'knowledge base', 'KB', or 'Location ID'.\n"
             "3. When answering about locations, state the address directly and cleanly, e.g.:\n"
             "   <b>Brightside Car Wash Location:</b><br>3000 Pennsylvania Ave Nw, Washington, DC 20500\n"
